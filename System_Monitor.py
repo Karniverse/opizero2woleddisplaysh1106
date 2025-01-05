@@ -16,7 +16,7 @@ height = 64
 line1 = 2
 line2 = 11
 line3 = 20
-line4 = 29
+line4 = 31
 line5 = 38
 line6 = 47
 col1 = 4
@@ -31,13 +31,15 @@ def make_font(name, size):
         os.path.dirname(__file__), 'fonts', name))
     return ImageFont.truetype(font_path, size)
 
+
 # Initialize the I2C interface and SH1106 display
 serial = i2c(port=0, address=0x3C)  # Ensure the I2C port and address are correct
 device = sh1106(serial)
 device.cleanup = do_nothing
 
 # Use default font for simplicity
-font10 = ImageFont.load_default()
+#font10 = ImageFont.load_default()
+font10 = make_font('FreePixel.ttf', 15)
 
 # Function to convert bytes to human-readable format
 def bytes2human(n):
@@ -54,22 +56,22 @@ def bytes2human(n):
 # Function to get CPU usage
 def cpu_usage():
     av1, av2, av3 = os.getloadavg()
-    return "LOAD: %.1f %.1f %.1f" % (av1, av2, av3)
+    return "------LOAD------\n%.2f%% %.2f%% %.2f%%" % (av1, av2, av3)
 
 # Function to get CPU temperature
 def cpu_temperature():
     tempC = int(open('/sys/class/thermal/thermal_zone0/temp').read()) / 1000
-    return "CPU TEMP: %sc" % (str(tempC))
+    return "----CPU TEMP----\n     %sc" % (str(tempC))
 
 # Function to get memory usage
 def mem_usage():
     usage = psutil.virtual_memory()
-    return "MEM Usage: %s / %s" % (bytes2human(usage.used), bytes2human(usage.total))
+    return "----MEM Usage---\n    %s / %s" % (bytes2human(usage.used), bytes2human(usage.total))
 
 # Function to get disk usage
 def disk_usage(dir):
     usage = psutil.disk_usage(dir)
-    return "DSK Usage: %s / %s" % (bytes2human(usage.used), bytes2human(usage.total))
+    return "---Disk Usage---\n    %s / %s" % (bytes2human(usage.used), bytes2human(usage.total))
 
 # Function to get network stats
 def network(iface):
@@ -80,7 +82,7 @@ def network(iface):
 def lan_ip():
     f = os.popen("ip route get 1 | awk '{print $NF;exit}'")
     ip = str(f.read())
-    return "IP: %s" % ip.rstrip('\r\n').rstrip(' ')
+    return "IP: \n%s" % ip.rstrip('\r\n').rstrip(' ')
 
 # Main function to display system stats
 def stats():
@@ -90,7 +92,7 @@ def stats():
         
         if looper == 0:
             draw.text((col1, line1), 'Orangepi Zero 2W', font=font10, fill=255)
-            draw.text((col1, line4), 'Starting up...', font=font10, fill=255)
+            draw.text((col1, line4), ' Starting up...', font=font10, fill=255)
             looper = 1
         elif looper == 1:
             draw.text((col1, line1), cpu_usage(), font=font10, fill=255)
@@ -107,7 +109,7 @@ def stats():
         else:
             uptime = datetime.now() - datetime.fromtimestamp(psutil.boot_time())
             draw.text((col1, line1), str(datetime.now().strftime('%a %b %d %H:%M:%S')), font=font10, fill=255)
-            draw.text((col1, line4), "Uptime : %s" % str(uptime).split('.')[0], font=font10, fill=255)
+            draw.text((col1, line4), "Uptime : \n%s" % str(uptime).split('.')[0], font=font10, fill=255)
             looper = 1
 
 # Main loop
