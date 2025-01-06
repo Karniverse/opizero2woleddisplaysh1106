@@ -44,7 +44,7 @@ device.cleanup = do_nothing
 # Use default font for simplicity
 #font15 = ImageFont.load_default()
 font15 = make_font('FreePixel.ttf', 15)
-font14 = make_font('FreePixel.ttf', 14)
+font14 = make_font('FreePixel.ttf', 14.5)
 
 
 def bytes2human(n):
