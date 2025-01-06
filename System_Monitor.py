@@ -1,6 +1,7 @@
 import os
 import psutil
 import platform
+import socket
 from luma.core.interface.serial import i2c
 from luma.core.render import canvas
 from luma.oled.device import sh1106
@@ -38,9 +39,11 @@ device = sh1106(serial)
 device.cleanup = do_nothing
 
 # Use default font for simplicity
-#font10 = ImageFont.load_default()
-font10 = make_font('FreePixel.ttf', 15)
+#font15 = ImageFont.load_default()
+font15 = make_font('FreePixel.ttf', 15)
+font14 = make_font('FreePixel.ttf', 14)
 
+'''
 # Function to convert bytes to human-readable format
 def bytes2human(n):
     symbols = ('K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y')
@@ -50,13 +53,23 @@ def bytes2human(n):
     for s in reversed(symbols):
         if n >= prefix[s]:
             value = int(float(n) / prefix[s])
-            return '%s%s' % (value, s)
-    return "%sB" % n
+            return '%.2f%s' % (value, s)
+    return "%.2f%sB" % n
+'''
+def bytes2human(n):
+    symbols = ('B', 'K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y')
+    for i in range(len(symbols)-1, -1, -1):
+        unit_size = 1024 ** i
+        if n >= unit_size:  # Find the appropriate unit
+            value = n / unit_size
+            return "%.2f%s" % (value, symbols[i])  # Format with 2 decimals
+    return "%.2fB" % n
+
 
 # Function to get CPU usage
 def cpu_usage():
     av1, av2, av3 = os.getloadavg()
-    return "------LOAD------\n%.2f%% %.2f%% %.2f%%" % (av1, av2, av3)
+    return "%.2f%% %.2f%% %.2f%%" % (av1, av2, av3)
 
 # Function to get CPU temperature
 def cpu_temperature():
@@ -66,12 +79,12 @@ def cpu_temperature():
 # Function to get memory usage
 def mem_usage():
     usage = psutil.virtual_memory()
-    return "----MEM Usage---\n    %s / %s" % (bytes2human(usage.used), bytes2human(usage.total))
+    return "\n%s / %s" % (bytes2human(usage.used), bytes2human(usage.total))
 
 # Function to get disk usage
 def disk_usage(dir):
     usage = psutil.disk_usage(dir)
-    return "---Disk Usage---\n    %s / %s" % (bytes2human(usage.used), bytes2human(usage.total))
+    return "\n%s / %s" % (bytes2human(usage.used), bytes2human(usage.total))
 
 # Function to get network stats
 def network(iface):
@@ -89,27 +102,31 @@ def stats():
     global looper
     with canvas(device) as draw:
         draw.rectangle((0, 0, 127, 63), outline="white", fill="black")
-        
+
         if looper == 0:
-            draw.text((col1, line1), 'Orangepi Zero 2W', font=font10, fill=255)
-            draw.text((col1, line4), ' Starting up...', font=font10, fill=255)
+            draw.text((col1-1, line1+5), 'Orangepi Zero 2W', font=font15, fill=255)
+            draw.text((col1, line4), ' Starting up...', font=font15, fill=255)
             looper = 1
         elif looper == 1:
-            draw.text((col1, line1), cpu_usage(), font=font10, fill=255)
-            draw.text((col1, line4), cpu_temperature(), font=font10, fill=255)
+            draw.text((col1, line1), '----CPU LOAD----', font=font15, fill=255)            
+            draw.text((col1-1, line2+5), cpu_usage(), font=font14, fill=255)
+            draw.text((col1, line4), cpu_temperature(), font=font15, fill=255)
             looper = 2
         elif looper == 2:
-            draw.text((col1, line1), mem_usage(), font=font10, fill=255)
-            draw.text((col1, line4), disk_usage('/'), font=font10, fill=255)
+            draw.text((col1, line1), '----MEM Usage---', font=font15, fill=255)
+            draw.text((col1+4, line1), mem_usage(), font=font15, fill=255)
+            draw.text((col1, line4), '---Disk Usage---', font=font15, fill=255)
+            draw.text((col1+4, line4), disk_usage('/'), font=font15, fill=255)
             looper = 3
         elif looper == 3:
-            draw.text((col1, line1), "%s %s" % (platform.system(), platform.release()), font=font10, fill=255)
-            draw.text((col1, line4), lan_ip(), font=font10, fill=255)
+            draw.text((col1, line1), "%s %s" % (platform.system(), platform.release()), font=font15, fill=255)
+            draw.text((col1, line3+5), "----Hostname----\n %s" % socket.gethostname(), font=font15, fill=255)
+            #draw.text((col1, line4), lan_ip(), font=font15, fill=255)
             looper = 4
         else:
             uptime = datetime.now() - datetime.fromtimestamp(psutil.boot_time())
-            draw.text((col1, line1), str(datetime.now().strftime('%a %b %d %H:%M:%S')), font=font10, fill=255)
-            draw.text((col1, line4), "Uptime : \n%s" % str(uptime).split('.')[0], font=font10, fill=255)
+            draw.text((col1-2, line1), str(datetime.now().strftime(' %a %b %d %Y\n   %I:%M:%S %p')), font=font15, fill=255)
+            draw.text((col1, line4+1), " ----Uptime---- \n %s" % str(uptime).split('.')[0], font=font15, fill=255)
             looper = 1
 
 # Main loop
