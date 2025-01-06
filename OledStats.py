@@ -2,9 +2,6 @@ import os
 import psutil
 import platform
 import socket
-import fcntl #delete if didnt work
-import struct #delete if didnt work
-import netifaces #delete if didnt work
 from luma.core.interface.serial import i2c
 from luma.core.render import canvas
 from luma.oled.device import sh1106
