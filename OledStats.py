@@ -2,6 +2,9 @@ import os
 import psutil
 import platform
 import socket
+import fcntl #delete if didnt work
+import struct #delete if didnt work
+import netifaces #delete if didnt work
 from luma.core.interface.serial import i2c
 from luma.core.render import canvas
 from luma.oled.device import sh1106
@@ -43,19 +46,7 @@ device.cleanup = do_nothing
 font15 = make_font('FreePixel.ttf', 15)
 font14 = make_font('FreePixel.ttf', 14)
 
-'''
-# Function to convert bytes to human-readable format
-def bytes2human(n):
-    symbols = ('K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y')
-    prefix = {}
-    for i, s in enumerate(symbols):
-        prefix[s] = 1 << (i + 1) * 10
-    for s in reversed(symbols):
-        if n >= prefix[s]:
-            value = int(float(n) / prefix[s])
-            return '%.2f%s' % (value, s)
-    return "%.2f%sB" % n
-'''
+
 def bytes2human(n):
     symbols = ('B', 'K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y')
     for i in range(len(symbols)-1, -1, -1):
@@ -74,17 +65,17 @@ def cpu_usage():
 # Function to get CPU temperature
 def cpu_temperature():
     tempC = int(open('/sys/class/thermal/thermal_zone0/temp').read()) / 1000
-    return "----CPU TEMP----\n     %sc" % (str(tempC))
+    return "%s°c" % (str(tempC))
 
 # Function to get memory usage
 def mem_usage():
     usage = psutil.virtual_memory()
-    return "\n%s / %s" % (bytes2human(usage.used), bytes2human(usage.total))
+    return "%s / %s" % (bytes2human(usage.used), bytes2human(usage.total))
 
 # Function to get disk usage
 def disk_usage(dir):
     usage = psutil.disk_usage(dir)
-    return "\n%s / %s" % (bytes2human(usage.used), bytes2human(usage.total))
+    return "%s / %s" % (bytes2human(usage.used), bytes2human(usage.total))
 
 # Function to get network stats
 def network(iface):
@@ -93,9 +84,24 @@ def network(iface):
 
 # Function to get local IP address
 def lan_ip():
-    f = os.popen("ip route get 1 | awk '{print $NF;exit}'")
+    f = os.popen("ip route get 1 | awk '/src/ {print $7}'")
     ip = str(f.read())
-    return "IP: \n%s" % ip.rstrip('\r\n').rstrip(' ')
+    return "IP: %s" % ip.rstrip('\r\n').rstrip(' ')
+
+# Function to draw centered text
+
+def draw_centered(y, text, FONT, draw):
+    SCREEN_WIDTH = 128
+    # Use getbbox() to get the bounding box of the text
+    bbox = FONT.getbbox(text)
+    width = bbox[2] - bbox[0]  # bbox[2] is the right edge, bbox[0] is the left edge
+
+    # Calculate the horizontal position (centered)
+    x = (SCREEN_WIDTH - width) // 2
+    
+    # Draw the text
+    draw.text((x, y), text, font=FONT, fill=255)
+
 
 # Main function to display system stats
 def stats():
@@ -104,29 +110,32 @@ def stats():
         draw.rectangle((0, 0, 127, 63), outline="white", fill="black")
 
         if looper == 0:
-            draw.text((col1-1, line1+5), 'Orangepi Zero 2W', font=font15, fill=255)
+            draw_centered(line1+5, 'Orangepi Zero 2W', font15, draw)
             draw.text((col1, line4), ' Starting up...', font=font15, fill=255)
             looper = 1
         elif looper == 1:
-            draw.text((col1, line1), '----CPU LOAD----', font=font15, fill=255)            
-            draw.text((col1-1, line2+5), cpu_usage(), font=font14, fill=255)
-            draw.text((col1, line4), cpu_temperature(), font=font15, fill=255)
+            draw.text((col1, line1), '----CPU LOAD----', font=font15, fill=255)     
+            draw_centered(line2+5, cpu_usage(), font14, draw)
+            draw_centered(line4, '----CPU TEMP----', font15, draw)
+            draw_centered(line6, cpu_temperature(), font15, draw)
             looper = 2
         elif looper == 2:
-            draw.text((col1, line1), '----MEM Usage---', font=font15, fill=255)
-            draw.text((col1+4, line1), mem_usage(), font=font15, fill=255)
-            draw.text((col1, line4), '---Disk Usage---', font=font15, fill=255)
-            draw.text((col1+4, line4), disk_usage('/'), font=font15, fill=255)
+            draw_centered(line1, '----MEM Usage---', font15, draw)
+            draw_centered(line3-2.5, mem_usage(), font15, draw)
+            draw_centered(line4+0.5, '---Disk Usage---', font15, draw)
+            draw_centered(line6-1, disk_usage('/'), font15, draw)
             looper = 3
         elif looper == 3:
-            draw.text((col1, line1), "%s %s" % (platform.system(), platform.release()), font=font15, fill=255)
-            draw.text((col1, line3+5), "----Hostname----\n %s" % socket.gethostname(), font=font15, fill=255)
-            #draw.text((col1, line4), lan_ip(), font=font15, fill=255)
+            draw_centered(line1+6, lan_ip(), font15, draw)
+            draw_centered(line4-3.75, "----Hostname----", font15, draw)
+            draw_centered(line5+5, "%s" % socket.gethostname(), font15, draw)            
             looper = 4
         else:
             uptime = datetime.now() - datetime.fromtimestamp(psutil.boot_time())
-            draw.text((col1-2, line1), str(datetime.now().strftime(' %a %b %d %Y\n   %I:%M:%S %p')), font=font15, fill=255)
-            draw.text((col1, line4+1), " ----Uptime---- \n %s" % str(uptime).split('.')[0], font=font15, fill=255)
+            draw_centered(line1+1, str(datetime.now().strftime('%a %b %d %Y')), font15, draw)
+            draw_centered(line3, str(datetime.now().strftime('%I:%M:%S %p')), font14, draw)            
+            draw_centered(line4+2.25, '-----Uptime-----', font15, draw)
+            draw_centered(line6, "%s" % str(uptime).split('.')[0], font15, draw)
             looper = 1
 
 # Main loop
