@@ -86,7 +86,6 @@ def lan_ip():
     return "IP: %s" % ip.rstrip('\r\n').rstrip(' ')
 
 # Function to draw centered text
-
 def draw_centered(y, text, FONT, draw):
     SCREEN_WIDTH = 128
     # Use getbbox() to get the bounding box of the text
@@ -104,7 +103,7 @@ def draw_centered(y, text, FONT, draw):
 def stats():
     global looper
     with canvas(device) as draw:
-        draw.rectangle((0, 0, 127, 63), outline="white", fill="black")
+        draw.rectangle((0, 0, 127.9, 63.9), outline="white", fill="black")
 
         if looper == 0:
             draw_centered(line1+5, 'Orangepi Zero 2W', font15, draw)
@@ -152,3 +151,9 @@ if __name__ == "__main__":
         main()
     except KeyboardInterrupt:
         pass
+'''
+references:
+https://www.reddit.com/r/raspberrypipico/comments/n3uqwl/need_help_with_ssd1306_i2c_display_only/
+http://www.orangepi.org/orangepiwiki/images/4/45/Zero2w-img7.png
+
+'''
