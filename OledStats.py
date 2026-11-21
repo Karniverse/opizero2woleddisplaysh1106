@@ -155,5 +155,7 @@ if __name__ == "__main__":
 references:
 https://www.reddit.com/r/raspberrypipico/comments/n3uqwl/need_help_with_ssd1306_i2c_display_only/
 http://www.orangepi.org/orangepiwiki/images/4/45/Zero2w-img7.png
+https://www.raspberrypi-spy.co.uk/2018/04/i2c-oled-display-module-with-raspberry-pi/
+https://luma-oled.readthedocs.io/en/latest/intro.html
 
 '''
