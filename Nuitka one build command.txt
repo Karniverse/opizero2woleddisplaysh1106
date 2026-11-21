@@ -1,0 +1,1 @@
+python -m nuitka --onefile --jobs=2 --output-filename=Oledstats OledStats.py
